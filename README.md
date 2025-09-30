@@ -1,7 +1,3 @@
-Chắc chắn rồi. Dưới đây là một file `README.md` đầy đủ và chuyên nghiệp cho dự án "Smart Parking Mini" của bạn. Bạn chỉ cần sao chép nội dung này, dán vào file `README.md` ở thư mục gốc của repo GitHub là xong.
-
------
-
 # 🚗 Hệ thống Đỗ xe Thông minh Mini (Smart Parking Mini)
 
 Dự án này là một mô hình mô phỏng hệ thống đỗ xe thông minh, được xây dựng với chi phí thấp nhằm mục đích học tập và nghiên cứu. Hệ thống cho phép người dùng và quản trị viên theo dõi trạng thái các chỗ đỗ xe (trống/có xe) theo thời gian thực.
@@ -148,7 +144,7 @@ flutter run
 
 ## 👥 Thành viên nhóm
 
-Dự án được thực hiện bởi Nhóm 5:
+Dự án được thực hiện bởi Nhóm 10:
 
 | STT | Vai trò                | Thành viên      |
 | :-- | :---------------------- | :-------------- |
