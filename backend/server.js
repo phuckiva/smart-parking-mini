@@ -3,6 +3,7 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
+const { swaggerUi, specs } = require('./src/config/swagger');
 
 // Import routes
 const apiRoutes = require('./src/api');
@@ -15,6 +16,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Swagger Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
+    explorer: true,
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: "Smart Parking API Documentation"
+}));
+
 // Routes
 app.use('/api', apiRoutes);
 
@@ -23,7 +31,14 @@ app.get('/', (req, res) => {
     res.json({
         message: '🚗 Smart Parking API Server',
         status: 'Running',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        documentation: `${req.protocol}://${req.get('host')}/api-docs`,
+        endpoints: {
+            health: '/api/health',
+            auth: '/api/auth',
+            users: '/api/users',
+            slots: '/api/slots'
+        }
     });
 });
 
@@ -31,7 +46,8 @@ app.get('/', (req, res) => {
 app.use('*', (req, res) => {
     res.status(404).json({
         error: 'Route not found',
-        path: req.originalUrl
+        path: req.originalUrl,
+        suggestion: 'Vui lòng kiểm tra API documentation tại /api-docs'
     });
 });
 
@@ -39,6 +55,7 @@ app.use('*', (req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 Server đang chạy tại http://localhost:${PORT}`);
     console.log(`🌐 API endpoints tại http://localhost:${PORT}/api`);
+    console.log(`📚 API Documentation tại http://localhost:${PORT}/api-docs`);
 });
 
 module.exports = app;

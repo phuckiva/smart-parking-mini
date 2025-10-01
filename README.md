@@ -48,13 +48,14 @@ Repo này được tổ chức theo cấu trúc monorepo để dễ dàng quản
 
 ## 🗄️ Thiết kế Cơ sở dữ liệu
 
-CSDL được thiết kế với 5 bảng chính để quản lý toàn bộ hệ thống:
+CSDL được thiết kế với 6 bảng chính để quản lý toàn bộ hệ thống:
 
 1.  **`parking_slots`**: Lưu trữ trạng thái của từng chỗ đỗ.
 2.  **`users`**: Lưu thông tin của người dùng (Admin và Driver).
 3.  **`roles`**: Định nghĩa các vai trò trong hệ thống.
 4.  **`user_roles`**: Bảng trung gian kết nối `users` và `roles`.
 5.  **`parking_history`**: Ghi lại nhật ký check-in/check-out của người dùng tại các chỗ đỗ.
+6.  **`parking_reservations`**: Quản lý việc đặt chỗ trước của người dùng.
 
 -----
 
@@ -69,14 +70,17 @@ CSDL được thiết kế với 5 bảng chính để quản lý toàn bộ h�
   - [PlatformIO](https://platformio.org/) (extension cho VS Code) hoặc Arduino IDE
   - Tài khoản [Supabase](https://supabase.com/)
 
-### **1. Cài đặt chung**
+### **1. Cài đặt Database (Supabase)**
 
-Đầu tiên, clone repository này về máy của bạn:
+Đầu tiên, tạo database:
 
 ```bash
-git clone https://github.com/your-username/smart-parking-mini.git
-cd smart-parking-mini
+# 1. Đăng ký tài khoản tại https://supabase.com
+# 2. Tạo project mới
+# 3. Vào SQL Editor và chạy script:
 ```
+
+Copy toàn bộ nội dung file `database/complete_setup.sql` và chạy trong Supabase SQL Editor.
 
 ### **2. Cài đặt Backend**
 
@@ -91,19 +95,21 @@ npm install
 cp .env.example .env
 ```
 
-Sau đó, mở file `.env` và điền chuỗi kết nối (Connection String) từ project Supabase của bạn vào.
+Mở file `.env` và điền thông tin Supabase:
 
 ```env
-DATABASE_URL="postgres://postgres:[YOUR-PASSWORD]@[YOUR-DB-SUBDOMAIN].supabase.co:5432/postgres"
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+JWT_SECRET=your-jwt-secret
 ```
 
-Cuối cùng, khởi động server:
+Khởi động server:
 
 ```bash
-npm run dev
+npm start
 ```
 
-Server backend sẽ chạy tại `http://localhost:3000`.
+Server backend sẽ chạy tại `http://localhost:8888`.
 
 ### **3. Cài đặt Web App (Dashboard)**
 
@@ -119,6 +125,10 @@ npm run dev
 ```
 
 Trang dashboard sẽ chạy tại `http://localhost:5173`.
+
+**Tài khoản test:**
+- Admin: `admin@smartparking.com` / `admin123`
+- User: `nguyenvana@email.com` / `123456`
 
 ### **4. Cài đặt Mobile App**
 

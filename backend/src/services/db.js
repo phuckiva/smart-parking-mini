@@ -1,59 +1,20 @@
-// Di chuyển file db.js gốc vào services và cải tiến
+// Supabase client cho server-side (thay vì dùng pg Client trực tiếp)
 require('dotenv').config();
 
-const { Client } = require('pg');
+const { createClient } = require('@supabase/supabase-js');
 
-// Tạo một pool connection để tái sử dụng
-class DatabaseService {
-    constructor() {
-        this.client = new Client({
-            connectionString: process.env.database_url,
-            ssl: {
-                rejectUnauthorized: false
-            }
-        });
-        this.isConnected = false;
-    }
+const SUPABASE_URL = process.env.SUPABASE_URL;
+// Ưu tiên SERVICE_ROLE_KEY trên server để không bị RLS chặn khi cần thiết
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
-    async connect() {
-        try {
-            if (!this.isConnected) {
-                await this.client.connect();
-                this.isConnected = true;
-                console.log('✅ Kết nối database thành công!');
-            }
-            return this.client;
-        } catch (error) {
-            console.error('❌ Lỗi kết nối database:', error.message);
-            throw error;
-        }
-    }
-
-    async disconnect() {
-        try {
-            if (this.isConnected) {
-                await this.client.end();
-                this.isConnected = false;
-                console.log('🔚 Đã đóng kết nối database');
-            }
-        } catch (error) {
-            console.error('⚠️ Lỗi khi đóng kết nối:', error.message);
-        }
-    }
-
-    async query(text, params) {
-        try {
-            await this.connect();
-            const result = await this.client.query(text, params);
-            return result;
-        } catch (error) {
-            console.error('❌ Lỗi thực thi query:', error.message);
-            throw error;
-        }
-    }
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  // Log cảnh báo rõ ràng khi thiếu cấu hình
+  console.warn('[Supabase] Thiếu SUPABASE_URL hoặc SUPABASE_SERVICE_ROLE_KEY/ANON_KEY trong .env');
 }
 
-// Tạo instance duy nhất (Singleton pattern)
-const db = new DatabaseService();
+const supabase = createClient(SUPABASE_URL || '', SUPABASE_KEY || '', {
+  auth: { persistSession: false },
+  db: { schema: 'public' }
+});
 
-module.exports = db;
+module.exports = supabase;

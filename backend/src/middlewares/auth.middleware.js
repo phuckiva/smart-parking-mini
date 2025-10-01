@@ -1,4 +1,4 @@
-// Middleware xác thực đơn giản
+const jwt = require('jsonwebtoken');
 const responseHandler = require('../utils/response.handler');
 
 class AuthMiddleware {
@@ -20,24 +20,67 @@ class AuthMiddleware {
         next();
     }
 
-    // Middleware xác thực token JWT (có thể mở rộng sau)
-    validateToken(req, res, next) {
-        const token = req.headers['authorization'];
-        
-        if (!token) {
-            return responseHandler.error(res, 'Token is required', 401);
+    // Middleware xác thực token JWT
+    authenticate(req, res, next) {
+        try {
+            const authHeader = req.headers.authorization;
+            
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return responseHandler.error(res, 'Token không được cung cấp', 401);
+            }
+
+            const token = authHeader.substring(7); // Bỏ "Bearer " ở đầu
+            
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+            req.user = decoded;
+            next();
+        } catch (error) {
+            if (error.name === 'TokenExpiredError') {
+                return responseHandler.error(res, 'Token đã hết hạn', 401);
+            } else if (error.name === 'JsonWebTokenError') {
+                return responseHandler.error(res, 'Token không hợp lệ', 401);
+            }
+            return responseHandler.error(res, 'Lỗi xác thực', 401);
         }
-        
-        // Tạm thời bypass xác thực token
-        // TODO: Implement JWT validation
-        next();
+    }
+
+    // Middleware xác thực token JWT (backward compatibility)
+    validateToken(req, res, next) {
+        return this.authenticate(req, res, next);
     }
 
     // Middleware kiểm tra quyền admin
     requireAdmin(req, res, next) {
-        // Tạm thời cho phép tất cả
-        // TODO: Implement role-based authorization
-        next();
+        try {
+            if (!req.user) {
+                return responseHandler.error(res, 'Chưa được xác thực', 401);
+            }
+
+            if (req.user.role !== 'ADMIN') {
+                return responseHandler.error(res, 'Không có quyền truy cập', 403);
+            }
+
+            next();
+        } catch (error) {
+            return responseHandler.error(res, 'Lỗi kiểm tra quyền', 500);
+        }
+    }
+
+    // Middleware kiểm tra quyền driver hoặc admin
+    requireDriver(req, res, next) {
+        try {
+            if (!req.user) {
+                return responseHandler.error(res, 'Chưa được xác thực', 401);
+            }
+
+            if (req.user.role !== 'DRIVER' && req.user.role !== 'ADMIN') {
+                return responseHandler.error(res, 'Không có quyền truy cập', 403);
+            }
+
+            next();
+        } catch (error) {
+            return responseHandler.error(res, 'Lỗi kiểm tra quyền', 500);
+        }
     }
 }
 
