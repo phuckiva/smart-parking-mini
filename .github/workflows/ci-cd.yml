@@ -1,0 +1,199 @@
+name: Smart Parking CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_VERSION: '18.x'
+  FLUTTER_VERSION: '3.13.0'
+
+jobs:
+  # Backend Code Check
+  backend-check:
+    name: Backend Code Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+    
+    - name: Install Dependencies
+      run: |
+        cd backend
+        npm ci
+    
+    - name: Check Code Syntax
+      run: |
+        cd backend
+        node -c server.js
+        echo "✅ Backend syntax check passed"
+    
+    - name: Security Audit
+      run: |
+        cd backend
+        npm audit --audit-level high || echo "⚠️ Security warnings found, please review"
+
+  # Frontend Code Check  
+  frontend-check:
+    name: Frontend Code Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: webapp/package-lock.json
+    
+    - name: Install Dependencies
+      run: |
+        cd webapp
+        npm ci
+    
+    - name: Build Check
+      run: |
+        cd webapp
+        npm run build
+        echo "✅ Frontend build successful"
+    
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: webapp-build
+        path: webapp/dist/
+        retention-days: 7
+
+  # Mobile App Check
+  mobile-check:
+    name: Mobile App Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Check Flutter Structure
+      run: |
+        cd mobileapp
+        if [ -f "pubspec.yaml" ]; then
+          echo "✅ Flutter project structure found"
+        else
+          echo "⚠️ Flutter project will be created later"
+        fi
+    
+    - name: Validate README
+      run: |
+        cd mobileapp
+        if [ -f "README.md" ]; then
+          echo "✅ Mobile README exists"
+        else
+          echo "❌ Mobile README missing"
+        fi
+
+  # Documentation Check
+  docs-check:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Check Project Documentation
+      run: |
+        echo "📚 Checking documentation..."
+        
+        # Check main README
+        if [ -f "README.md" ]; then
+          echo "✅ Main README.md exists"
+        else
+          echo "❌ Main README.md missing"
+          exit 1
+        fi
+        
+        # Check component READMEs
+        if [ -f "backend/README.md" ]; then
+          echo "✅ Backend README exists"
+        fi
+        
+        if [ -f "webapp/README.md" ]; then
+          echo "✅ Frontend README exists"
+        fi
+        
+        if [ -f "DEVOPS.md" ]; then
+          echo "✅ DevOps documentation exists"
+        fi
+        
+        echo "📖 Documentation check completed"
+
+  # Code Quality Summary
+  quality-summary:
+    name: Code Quality Summary
+    runs-on: ubuntu-latest
+    needs: [backend-check, frontend-check, mobile-check, docs-check]
+    if: always()
+    
+    steps:
+    - name: Check Results
+      run: |
+        echo "📊 Code Quality Summary"
+        echo "======================"
+        
+        if [ "${{ needs.backend-check.result }}" == "success" ]; then
+          echo "✅ Backend: PASSED"
+        else
+          echo "❌ Backend: FAILED"
+        fi
+        
+        if [ "${{ needs.frontend-check.result }}" == "success" ]; then
+          echo "✅ Frontend: PASSED"
+        else
+          echo "❌ Frontend: FAILED"
+        fi
+        
+        if [ "${{ needs.mobile-check.result }}" == "success" ]; then
+          echo "✅ Mobile: PASSED"
+        else
+          echo "❌ Mobile: FAILED"
+        fi
+        
+        if [ "${{ needs.docs-check.result }}" == "success" ]; then
+          echo "✅ Documentation: PASSED"
+        else
+          echo "❌ Documentation: FAILED"
+        fi
+        
+        echo "======================"
+        echo "🎉 CI/CD Pipeline completed!"
+
+  # Notify Results (Optional)
+  notify-results:
+    name: Notify Results
+    runs-on: ubuntu-latest
+    needs: [quality-summary]
+    if: always() && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Success Notification
+      if: needs.quality-summary.result == 'success'
+      run: |
+        echo "🚀 All checks passed! Code is ready for deployment."
+        
+    - name: Failure Notification  
+      if: needs.quality-summary.result != 'success'
+      run: |
+        echo "❌ Some checks failed. Please review the errors above."

@@ -1,0 +1,116 @@
+version: '3.8'
+
+services:
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: smart-parking-backend-dev
+    ports:
+      - "8888:8888"
+    environment:
+      - NODE_ENV=development
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=24h
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    restart: unless-stopped
+    depends_on:
+      - redis
+    networks:
+      - smart-parking-network
+
+  # Frontend Web App
+  frontend:
+    build:
+      context: ./webapp
+      dockerfile: Dockerfile
+    container_name: smart-parking-frontend-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_BASE=http://localhost:8888/api
+    volumes:
+      - ./webapp:/app
+      - /app/node_modules
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - smart-parking-network
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: smart-parking-redis-dev
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - smart-parking-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: smart-parking-nginx-dev
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.dev.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+    networks:
+      - smart-parking-network
+
+  # Monitoring with Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: smart-parking-prometheus-dev
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - smart-parking-network
+
+  # Grafana for metrics visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: smart-parking-grafana-dev
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    restart: unless-stopped
+    networks:
+      - smart-parking-network
+
+volumes:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  smart-parking-network:
+    driver: bridge

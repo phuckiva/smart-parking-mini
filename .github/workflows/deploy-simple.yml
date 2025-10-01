@@ -1,0 +1,77 @@
+name: Simple Deploy Without Docker
+
+on:
+  workflow_run:
+    workflows: ["Smart Parking CI/CD Pipeline"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch: # Cho phép chạy thủ công
+
+jobs:
+  deploy-files:
+    name: Deploy Static Files
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18.x'
+    
+    - name: Build Frontend
+      run: |
+        cd webapp
+        npm ci
+        npm run build
+        echo "✅ Frontend built successfully"
+    
+    - name: Prepare Backend Files
+      run: |
+        cd backend
+        npm ci --production
+        echo "✅ Backend dependencies installed"
+    
+    - name: Create Deployment Package
+      run: |
+        mkdir -p deployment-package
+        
+        # Copy frontend build
+        cp -r webapp/dist deployment-package/frontend
+        
+        # Copy backend files
+        cp -r backend deployment-package/backend
+        
+        # Remove dev dependencies and unnecessary files
+        rm -rf deployment-package/backend/node_modules/.cache
+        rm -rf deployment-package/backend/.git*
+        
+        echo "📦 Deployment package created"
+    
+    - name: Upload Deployment Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: deployment-package
+        path: deployment-package/
+        retention-days: 30
+    
+    - name: Deploy Summary
+      run: |
+        echo "🎉 Deployment Package Ready!"
+        echo "================================"
+        echo "📁 Frontend: deployment-package/frontend/"
+        echo "📁 Backend: deployment-package/backend/"
+        echo ""
+        echo "📝 Deployment Instructions:"
+        echo "1. Download the 'deployment-package' artifact"
+        echo "2. Extract to your server"
+        echo "3. Configure environment variables"
+        echo "4. Run: cd backend && npm start"
+        echo "5. Serve frontend files with nginx/apache"
+        echo ""
+        echo "🔗 Direct deployment commands:"
+        echo "Backend: cd deployment-package/backend && PORT=8888 npm start"
+        echo "Frontend: Serve deployment-package/frontend/ on port 3000"

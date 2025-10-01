@@ -27,6 +27,9 @@ Dự án được xây dựng theo kiến trúc monorepo, bao gồm các thành 
 | **Database** | PostgreSQL trên Supabase                                 |
 | **Web App** | React.js, Vite                                           |
 | **Mobile App** | Flutter                                                  |
+| **DevOps** | Docker, Kubernetes, GitHub Actions, Terraform            |
+| **Monitoring** | Prometheus, Grafana, Loki, AlertManager                  |
+| **Infrastructure** | AWS EKS, RDS, VPC, ALB                               |
 
 -----
 
@@ -36,12 +39,18 @@ Repo này được tổ chức theo cấu trúc monorepo để dễ dàng quản
 
 ```
 /
-├── 📁 backend/         # Chứa code API server (Node.js)
-├── 📁 webapp/          # Chứa code trang dashboard quản trị (React)
-├── 📁 mobileapp/       # Chứa code ứng dụng cho người dùng (Flutter)
-├── 📁 firmware/        # Chứa code cho vi điều khiển ESP32
-├── 📁 database/        # Chứa các script SQL để thiết lập CSDL
-└── 📄 README.md        # File hướng dẫn này
+├── 📁 backend/             # Chứa code API server (Node.js)
+├── 📁 webapp/              # Chứa code trang dashboard quản trị (React)
+├── 📁 mobileapp/           # Chứa code ứng dụng cho người dùng (Flutter)
+├── 📁 firmware/            # Chứa code cho vi điều khiển ESP32
+├── 📁 database/            # Chứa các script SQL để thiết lập CSDL
+├── 📁 k8s/                 # Kubernetes deployment manifests
+├── 📁 infrastructure/      # Terraform Infrastructure as Code
+├── 📁 monitoring/          # Prometheus, Grafana configurations
+├── 📁 scripts/             # Deployment và automation scripts
+├── 📁 .github/workflows/   # CI/CD pipeline definitions
+├── 📄 docker-compose.*.yml # Docker orchestration files
+└── 📄 README.md            # File hướng dẫn này
 ```
 
 -----
@@ -159,7 +168,7 @@ Dự án được thực hiện bởi Nhóm 10:
 | STT | Vai trò                | Thành viên      |
 | :-- | :---------------------- | :-------------- |
 | 1   | Firmware Developer      | Nguyễn Quốc Tú |
-| 2   | Backend Developer       | Lê Đăng Hoàng Tuấn |
-| 3   | Database & DevOps       | Huỳnh Trọng Phúc |
-| 4   | Web App Developer       | Trần Thị Kiều Liêu |
-| 5   | Mobile App Developer    | Huỳnh Anh Tuấn |
+| 2   | Backend Developer & DevOps       | Lê Đăng Hoàng Tuấn |
+| 3   | Database  & Firmware Developer    | Huỳnh Trọng Phúc |
+| 4   | Web App Developer  & Tester   | Trần Thị Kiều Liêu |
+| 5   | Mobile App Developer  & Tester  | Huỳnh Anh Tuấn |
