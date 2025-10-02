@@ -1,0 +1,15 @@
+# 📄 Requirements cho ESP32 Simulator
+# Cài đặt: pip install -r requirements.txt
+
+# Basic requirements (bắt buộc)
+requests>=2.28.0
+
+# GUI requirements (tùy chọn)
+customtkinter>=5.0.0    # Modern desktop UI (recommended)
+# tkinter built-in với Python - không cần cài
+
+# Built-in modules (không cần cài)
+# threading
+# json  
+# time
+# datetime

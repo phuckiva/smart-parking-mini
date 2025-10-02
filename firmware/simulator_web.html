@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚗 ESP32 Simulator - Smart Parking</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .config-panel {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .config-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .config-row label {
+            font-weight: bold;
+            min-width: 120px;
+        }
+
+        .config-row input, .config-row select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #0056b3;
+        }
+
+        .btn.success {
+            background: #28a745;
+        }
+
+        .btn.success:hover {
+            background: #1e7e34;
+        }
+
+        .btn.danger {
+            background: #dc3545;
+        }
+
+        .btn.danger:hover {
+            background: #c82333;
+        }
+
+        .slots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .slot-card {
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 20px;
+            background: white;
+            transition: all 0.3s;
+        }
+
+        .slot-card.occupied {
+            border-color: #dc3545;
+            background: #fff5f5;
+        }
+
+        .slot-card.available {
+            border-color: #28a745;
+            background: #f8fff8;
+        }
+
+        .slot-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .slot-id {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .slot-status {
+            font-size: 1.2em;
+            padding: 5px 15px;
+            border-radius: 20px;
+            color: white;
+        }
+
+        .slot-status.occupied {
+            background: #dc3545;
+        }
+
+        .slot-status.available {
+            background: #28a745;
+        }
+
+        .distance-display {
+            font-size: 2em;
+            text-align: center;
+            margin: 15px 0;
+            color: #333;
+        }
+
+        .distance-control {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin: 15px 0;
+        }
+
+        .distance-control input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .mode-btn.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .log-panel {
+            background: #000;
+            color: #00ff00;
+            padding: 20px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .connection-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .connection-status.connected {
+            background: #28a745;
+            color: white;
+        }
+
+        .connection-status.disconnected {
+            background: #dc3545;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .config-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .slots-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🚗 ESP32 Simulator</h1>
+            <p>Smart Parking System - Web Version</p>
+            <span id="connectionStatus" class="connection-status disconnected">❌ Disconnected</span>
+        </div>
+
+        <!-- Configuration Panel -->
+        <div class="config-panel">
+            <div class="config-row">
+                <label>🌐 API URL:</label>
+                <input type="text" id="apiUrl" value="http://localhost:8888/api" style="flex: 1;">
+                <button class="btn" onclick="testConnection()">Test Connection</button>
+            </div>
+            
+            <div class="config-row">
+                <label>⚙️ Control:</label>
+                <button class="btn success" onclick="startAllSimulators()">▶️ Start All</button>
+                <button class="btn danger" onclick="stopAllSimulators()">⏹️ Stop All</button>
+                <button class="btn" onclick="addSlot()">➕ Add Slot</button>
+                <button class="btn" onclick="clearLog()">🗑️ Clear Log</button>
+            </div>
+        </div>
+
+        <!-- Slots Grid -->
+        <div class="slots-grid" id="slotsGrid">
+            <!-- Slots will be generated here -->
+        </div>
+
+        <!-- Log Panel -->
+        <div class="log-panel" id="logPanel">
+            <div>🚀 ESP32 Simulator initialized...</div>
+            <div>📡 Ready to connect to API...</div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let slots = {};
+        let simulationRunning = false;
+        let simulationInterval = null;
+        let apiUrl = 'http://localhost:8888/api';
+        let isConnected = false;
+
+        // Initialize with default slots
+        function initializeSlots() {
+            addSlotData(1);
+            addSlotData(2);
+            addSlotData(3);
+            renderSlots();
+        }
+
+        // Add a new slot
+        function addSlotData(slotId) {
+            if (!slots[slotId]) {
+                slots[slotId] = {
+                    id: slotId,
+                    distance: 25.0,
+                    status: false, // false = available, true = occupied
+                    mode: 'auto', // auto, manual, random
+                    lastUpdate: new Date()
+                };
+                log(`➕ Added Slot ${slotId}`);
+            }
+        }
+
+        // Add slot dialog
+        function addSlot() {
+            const slotId = prompt('Enter Slot ID (number):');
+            if (slotId && !isNaN(slotId) && parseInt(slotId) > 0) {
+                addSlotData(parseInt(slotId));
+                renderSlots();
+            } else if (slotId) {
+                alert('Please enter a valid positive number');
+            }
+        }
+
+        // Render all slots
+        function renderSlots() {
+            const grid = document.getElementById('slotsGrid');
+            grid.innerHTML = '';
+
+            Object.keys(slots).sort((a, b) => parseInt(a) - parseInt(b)).forEach(slotId => {
+                const slot = slots[slotId];
+                const slotElement = createSlotElement(slot);
+                grid.appendChild(slotElement);
+            });
+        }
+
+        // Create slot element
+        function createSlotElement(slot) {
+            const div = document.createElement('div');
+            div.className = `slot-card ${slot.status ? 'occupied' : 'available'}`;
+            div.innerHTML = `
+                <div class="slot-header">
+                    <div class="slot-id">🅿️ Slot ${slot.id}</div>
+                    <div class="slot-status ${slot.status ? 'occupied' : 'available'}">
+                        ${slot.status ? '🚗 OCCUPIED' : '✅ AVAILABLE'}
+                    </div>
+                </div>
+                
+                <div class="distance-display">
+                    📏 ${slot.distance.toFixed(1)} cm
+                </div>
+                
+                <div class="distance-control">
+                    <input type="number" id="distance-${slot.id}" value="${slot.distance}" 
+                           min="0" max="100" step="0.1">
+                    <button class="btn" onclick="setManualDistance(${slot.id})">Set</button>
+                </div>
+                
+                <div class="mode-selector">
+                    <button class="mode-btn ${slot.mode === 'auto' ? 'active' : ''}" 
+                            onclick="setMode(${slot.id}, 'auto')">Auto</button>
+                    <button class="mode-btn ${slot.mode === 'manual' ? 'active' : ''}" 
+                            onclick="setMode(${slot.id}, 'manual')">Manual</button>
+                    <button class="mode-btn ${slot.mode === 'random' ? 'active' : ''}" 
+                            onclick="setMode(${slot.id}, 'random')">Random</button>
+                </div>
+                
+                <div style="font-size: 12px; color: #666; text-align: center;">
+                    Mode: ${slot.mode.toUpperCase()} | Updated: ${slot.lastUpdate.toLocaleTimeString()}
+                </div>
+            `;
+            return div;
+        }
+
+        // Set manual distance
+        function setManualDistance(slotId) {
+            const input = document.getElementById(`distance-${slotId}`);
+            const distance = parseFloat(input.value);
+            
+            if (!isNaN(distance) && distance >= 0) {
+                slots[slotId].distance = distance;
+                slots[slotId].mode = 'manual';
+                updateSlotStatus(slotId);
+                renderSlots();
+                log(`🔧 Slot ${slotId}: Manual distance set to ${distance}cm`);
+            }
+        }
+
+        // Set simulation mode
+        function setMode(slotId, mode) {
+            slots[slotId].mode = mode;
+            renderSlots();
+            log(`🔧 Slot ${slotId}: Mode changed to ${mode}`);
+        }
+
+        // Update slot status based on distance
+        function updateSlotStatus(slotId) {
+            const slot = slots[slotId];
+            const oldStatus = slot.status;
+            const newStatus = slot.distance <= 10; // 10cm threshold
+            
+            slot.status = newStatus;
+            slot.lastUpdate = new Date();
+            
+            // Send API update if status changed
+            if (oldStatus !== newStatus && isConnected && simulationRunning) {
+                sendApiUpdate(slotId, newStatus, slot.distance);
+            }
+        }
+
+        // Simulate distance based on mode
+        function simulateDistance(slot) {
+            switch (slot.mode) {
+                case 'manual':
+                    return slot.distance;
+                    
+                case 'random':
+                    return Math.random() * 45 + 5; // 5-50cm
+                    
+                case 'auto':
+                default:
+                    const hour = new Date().getHours();
+                    const isRushHour = (hour >= 7 && hour <= 9) || (hour >= 17 && hour <= 19);
+                    const occupiedChance = isRushHour ? 0.7 : 0.3;
+                    
+                    if (Math.random() < occupiedChance) {
+                        return Math.random() * 5 + 3; // 3-8cm (car present)
+                    } else {
+                        return Math.random() * 25 + 15; // 15-40cm (no car)
+                    }
+            }
+        }
+
+        // Test API connection
+        async function testConnection() {
+            apiUrl = document.getElementById('apiUrl').value;
+            const statusElement = document.getElementById('connectionStatus');
+            
+            try {
+                log('🔍 Testing API connection...');
+                const response = await fetch(`${apiUrl}/slots`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    isConnected = true;
+                    statusElement.textContent = '✅ Connected';
+                    statusElement.className = 'connection-status connected';
+                    log('✅ API connection successful!');
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                isConnected = false;
+                statusElement.textContent = '❌ Disconnected';
+                statusElement.className = 'connection-status disconnected';
+                log(`❌ API connection failed: ${error.message}`);
+            }
+        }
+
+        // Send API update
+        async function sendApiUpdate(slotId, occupied, distance) {
+            if (!isConnected) return;
+            
+            try {
+                const payload = {
+                    status: occupied ? 'occupied' : 'available',
+                    sensor_id: `ESP32_SLOT_${slotId}`,
+                    timestamp: Date.now(),
+                    distance: distance
+                };
+                
+                const response = await fetch(`${apiUrl}/slots/${slotId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': 'smart-parking-2025'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.ok) {
+                    const statusText = occupied ? '🚗 OCCUPIED' : '🅿️ AVAILABLE';
+                    log(`📡 Slot ${slotId}: ${statusText} (API updated)`);
+                } else {
+                    log(`❌ Slot ${slotId}: API error [${response.status}]`);
+                }
+            } catch (error) {
+                log(`❌ Slot ${slotId}: Network error - ${error.message}`);
+            }
+        }
+
+        // Start all simulators
+        function startAllSimulators() {
+            if (!simulationRunning) {
+                simulationRunning = true;
+                simulationInterval = setInterval(runSimulation, 2000); // Every 2 seconds
+                log('▶️ Simulation started for all slots');
+            }
+        }
+
+        // Stop all simulators
+        function stopAllSimulators() {
+            if (simulationRunning) {
+                simulationRunning = false;
+                clearInterval(simulationInterval);
+                log('⏹️ Simulation stopped for all slots');
+            }
+        }
+
+        // Run simulation cycle
+        function runSimulation() {
+            Object.keys(slots).forEach(slotId => {
+                const slot = slots[slotId];
+                
+                // Update distance based on mode
+                if (slot.mode !== 'manual') {
+                    slot.distance = simulateDistance(slot);
+                }
+                
+                // Update status
+                updateSlotStatus(slotId);
+            });
+            
+            renderSlots();
+        }
+
+        // Log message
+        function log(message) {
+            const logPanel = document.getElementById('logPanel');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            logPanel.appendChild(logEntry);
+            logPanel.scrollTop = logPanel.scrollHeight;
+        }
+
+        // Clear log
+        function clearLog() {
+            const logPanel = document.getElementById('logPanel');
+            logPanel.innerHTML = '<div>🗑️ Log cleared</div>';
+        }
+
+        // Initialize on page load
+        window.onload = function() {
+            initializeSlots();
+            log('🚀 Web ESP32 Simulator ready!');
+            log('📝 Instructions:');
+            log('1. Set API URL and test connection');
+            log('2. Click "Start All" to begin simulation');
+            log('3. Use mode buttons to control each slot');
+            log('4. Manual mode: set exact distance');
+            log('5. Auto mode: realistic parking patterns');
+            log('6. Random mode: unpredictable behavior');
+        };
+    </script>
+</body>
+</html>
