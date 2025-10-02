@@ -375,10 +375,11 @@ class UsersController {
     async updateMe(req, res) {
         try {
             const userId = req.user.userId;
-            const { full_name, license_plate } = req.body || {};
+            const { full_name, license_plate, email } = req.body || {};
             const payload = {};
             if (typeof full_name === 'string') payload.full_name = full_name;
             if (typeof license_plate === 'string') payload.license_plate = license_plate || null;
+            if (typeof email === 'string') payload.email = email;
             if (Object.keys(payload).length === 0) {
                 return responseHandler.error(res, 'Không có dữ liệu để cập nhật', 400);
             }
