@@ -378,6 +378,76 @@ class SlotsController {
             responseHandler.error(res, error.message, 500);
         }
     }
+
+    /**
+     * @swagger
+     * /api/slots/available-by-time:
+     *   get:
+     *     summary: Lấy danh sách chỗ đỗ có thể đặt trong khoảng thời gian
+     *     tags: [Parking Slots]
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: start_time
+     *         required: true
+     *         schema:
+     *           type: string
+     *           format: date-time
+     *         description: Thời gian bắt đầu (ISO 8601)
+     *         example: "2025-10-05T10:00:00Z"
+     *       - in: query
+     *         name: end_time
+     *         required: true
+     *         schema:
+     *           type: string
+     *           format: date-time
+     *         description: Thời gian kết thúc (ISO 8601)
+     *         example: "2025-10-05T13:00:00Z"
+     *     responses:
+     *       200:
+     *         description: Danh sách chỗ đỗ có thể đặt
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *                 message:
+     *                   type: string
+     *                 data:
+     *                   type: array
+     *                   items:
+     *                     $ref: '#/components/schemas/ParkingSlot'
+     *       400:
+     *         description: Tham số thời gian không hợp lệ
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/ErrorResponse'
+     *       401:
+     *         description: Chưa được xác thực
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/ErrorResponse'
+     */
+    async getAvailableSlotsByTimeRange(req, res) {
+        try {
+            const { start_time, end_time } = req.query;
+            
+            if (!start_time || !end_time) {
+                return responseHandler.error(res, 'Tham số start_time và end_time là bắt buộc', 400);
+            }
+
+            const availableSlots = await slotsService.getAvailableSlotsByTimeRange(start_time, end_time);
+            responseHandler.success(res, availableSlots, 'Lấy danh sách chỗ đỗ có thể đặt thành công');
+        } catch (error) {
+            console.error('Get available slots by time range error:', error);
+            responseHandler.error(res, error.message, 400);
+        }
+    }
 }
 
 module.exports = new SlotsController();

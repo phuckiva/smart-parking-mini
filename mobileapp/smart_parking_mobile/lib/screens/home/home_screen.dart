@@ -745,31 +745,48 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         child: ElevatedButton(
                           onPressed: () {
-                            showModalBottomSheet(
+                            showGeneralDialog(
                               context: context,
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(24),
-                                ),
-                              ),
-                              isScrollControlled: true,
-                              builder: (context) {
-                                return Padding(
-                                  padding: EdgeInsets.only(
-                                    bottom: MediaQuery.of(
-                                      context,
-                                    ).viewInsets.bottom,
-                                  ),
-                                  child: SizedBox(
-                                    height: 400,
-                                    child: FormReservation(
-                                      token: widget.token,
-                                      user: widget.user,
-                                      role: widget.role,
-                                    ),
-                                  ),
-                                );
-                              },
+                              barrierDismissible: true,
+                              barrierLabel: 'Đặt chỗ',
+                              pageBuilder:
+                                  (context, animation, secondaryAnimation) {
+                                    return SafeArea(
+                                      child: Scaffold(
+                                        appBar: AppBar(
+                                          title: const Text(
+                                            'Đặt chỗ theo thời gian',
+                                          ),
+                                          backgroundColor: Colors.blue[700],
+                                          leading: IconButton(
+                                            icon: const Icon(Icons.close),
+                                            onPressed: () =>
+                                                Navigator.of(context).pop(),
+                                          ),
+                                        ),
+                                        body: FormReservation(
+                                          token: widget.token,
+                                          user: widget.user,
+                                          role: widget.role,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                              transitionBuilder:
+                                  (
+                                    context,
+                                    animation,
+                                    secondaryAnimation,
+                                    child,
+                                  ) {
+                                    return SlideTransition(
+                                      position: Tween<Offset>(
+                                        begin: const Offset(0, 1),
+                                        end: Offset.zero,
+                                      ).animate(animation),
+                                      child: child,
+                                    );
+                                  },
                             );
                           },
                           style: ElevatedButton.styleFrom(

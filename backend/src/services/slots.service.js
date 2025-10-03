@@ -184,6 +184,86 @@ class SlotsService {
         }
     }
 
+    // Lấy chỗ đỗ có thể đặt trong khoảng thời gian
+    async getAvailableSlotsByTimeRange(startTime, endTime) {
+        try {
+            if (!startTime || !endTime) {
+                throw new Error('Thời gian bắt đầu và kết thúc là bắt buộc');
+            }
+
+            // Validate time format
+            const start = new Date(startTime);
+            const end = new Date(endTime);
+            
+            if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+                throw new Error('Định dạng thời gian không hợp lệ');
+            }
+            
+            if (start >= end) {
+                throw new Error('Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc');
+            }
+
+            // Query để tìm slot có thể đặt
+            const { data: availableSlots, error } = await supabase
+                .rpc('get_available_slots_by_time_range', {
+                    new_start: startTime,
+                    new_end: endTime
+                });
+
+            if (error) {
+                // Nếu RPC function không tồn tại, dùng raw query
+                const query = `
+                    SELECT s.id, s.slot_name, s.status, s.created_at, s.updated_at
+                    FROM parking_slots s
+                    WHERE s.status = 'available'
+                      AND s.id NOT IN (
+                          SELECT r.slot_id
+                          FROM parking_reservations r
+                          WHERE r.status IN ('active')
+                            AND tstzrange(r.start_time, r.end_time) && tstzrange($1, $2)
+                      )
+                    ORDER BY s.slot_name ASC
+                `;
+
+                const { data: slots, error: queryError } = await supabase
+                    .from('parking_slots')
+                    .select(`
+                        id,
+                        slot_name,
+                        status,
+                        created_at,
+                        updated_at
+                    `)
+                    .eq('status', 'available');
+
+                if (queryError) {
+                    throw new Error(queryError.message);
+                }
+
+                // Filter out conflicted slots manually
+                const { data: conflictedReservations, error: reservationError } = await supabase
+                    .from('parking_reservations')
+                    .select('slot_id')
+                    .in('status', ['active', 'completed'])
+                    .lte('start_time', endTime)
+                    .gte('end_time', startTime);
+
+                if (reservationError) {
+                    throw new Error(reservationError.message);
+                }
+
+                const conflictedSlotIds = conflictedReservations.map(r => r.slot_id);
+                const filteredSlots = slots.filter(slot => !conflictedSlotIds.includes(slot.id));
+
+                return filteredSlots.sort((a, b) => a.slot_name.localeCompare(b.slot_name));
+            }
+
+            return availableSlots;
+        } catch (error) {
+            throw new Error(`Lỗi khi tìm chỗ đỗ có thể đặt: ${error.message}`);
+        }
+    }
+
     // Lấy thống kê chỗ đỗ
     async getSlotStatistics() {
         try {

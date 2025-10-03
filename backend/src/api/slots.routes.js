@@ -16,6 +16,7 @@ router.use(authMiddleware.authenticate);
 
 // Routes công khai (cho tất cả user đã đăng nhập)
 router.get('/available', slotsController.getAvailableSlots);
+router.get('/available-by-time', slotsController.getAvailableSlotsByTimeRange);
 router.get('/', slotsController.getAllSlots);
 router.get('/:id', slotsController.getSlotById);
 

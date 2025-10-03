@@ -49,19 +49,23 @@ class ReservationsController {
       if (!slot_id || !start_time || !end_time) {
         return responseHandler.error(res, 'slot_id, start_time, end_time là bắt buộc', 400);
       }
-      const start = new Date(start_time);
-      const end = new Date(end_time);
-      if (isNaN(start) || isNaN(end) || end <= start) {
+      // Kiểm tra định dạng ISO: yyyy-MM-ddTHH:mm:ss hoặc yyyy-MM-ddTHH:mm:ss.sss
+      const isoRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{3})?)?$/;
+      if (!isoRegex.test(start_time) || !isoRegex.test(end_time)) {
+        return responseHandler.error(res, 'Thời gian phải đúng định dạng ISO local, không có Z', 400);
+      }
+      // Kiểm tra logic thời gian
+      if (end_time <= start_time) {
         return responseHandler.error(res, 'Khoảng thời gian không hợp lệ', 400);
       }
       // max 3 active per user
       const count = await Reservations.activeCount(userId);
       if (count >= 3) return responseHandler.error(res, 'Bạn đã đạt tối đa 3 đặt chỗ đang hiệu lực', 400);
       // overlap check
-      const overlap = await Reservations.hasOverlap(slot_id, start.toISOString(), end.toISOString());
+      const overlap = await Reservations.hasOverlap(slot_id, start_time, end_time);
       if (overlap) return responseHandler.error(res, 'Chỗ đỗ đã được đặt trong khoảng thời gian này', 400);
       // create
-      const created = await Reservations.create({ slot_id, user_id: userId, start_time: start.toISOString(), end_time: end.toISOString() });
+      const created = await Reservations.create({ slot_id, user_id: userId, start_time, end_time });
       return responseHandler.success(res, created, 'Đặt chỗ thành công', 201);
     } catch (e) {
       const msg = e?.message || '';
