@@ -17,8 +17,8 @@ const Reservations = {
       .from(TABLE)
       .select('*, parking_slots(slot_name)')
       .eq('user_id', user_id)
-      .eq('status', 'active')
-      .gt('end_time', nowIso)
+      .in('status', ['active', 'cancelled', 'completed'])
+      //.gt('end_time', nowIso)
       .order('start_time', { ascending: true });
     if (error) throw error;
     return data || [];
