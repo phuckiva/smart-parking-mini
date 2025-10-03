@@ -11,6 +11,10 @@ const apiRoutes = require('./src/api');
 const app = express();
 const PORT = process.env.PORT || 8888;
 
+// Khởi động schedule job tự động
+const { startSchedule } = require('./src/schedule/schedule');
+startSchedule();
+
 // Middleware
 app.use(cors());
 app.use(express.json());
