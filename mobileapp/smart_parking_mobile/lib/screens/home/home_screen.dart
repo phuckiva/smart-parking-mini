@@ -594,6 +594,56 @@ class _HomeScreenState extends State<HomeScreen> {
                                               ],
                                             ),
                                             const SizedBox(height: 12),
+                                            // Nút hủy cho reservation active
+                                            if (isActive)
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                  bottom: 12,
+                                                ),
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.end,
+                                                  children: [
+                                                    ElevatedButton.icon(
+                                                      onPressed: () =>
+                                                          _showCancelDialog(
+                                                            item['id']
+                                                                .toString(),
+                                                          ),
+                                                      icon: const Icon(
+                                                        Icons.cancel_outlined,
+                                                        size: 16,
+                                                      ),
+                                                      label: const Text(
+                                                        'Hủy đặt chỗ',
+                                                      ),
+                                                      style: ElevatedButton.styleFrom(
+                                                        backgroundColor:
+                                                            Colors.red[50],
+                                                        foregroundColor:
+                                                            Colors.red[700],
+                                                        elevation: 0,
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 16,
+                                                              vertical: 8,
+                                                            ),
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                          side: BorderSide(
+                                                            color: Colors
+                                                                .red[200]!,
+                                                            width: 1,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
                                             Container(
                                               padding: const EdgeInsets.all(12),
                                               decoration: BoxDecoration(
@@ -865,6 +915,145 @@ class _HomeScreenState extends State<HomeScreen> {
       return DateFormat('dd/MM/yyyy HH:mm').format(date);
     } catch (_) {
       return dateStr;
+    }
+  }
+
+  void _showCancelDialog(String reservationId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.red[400],
+                  size: 48,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Xác nhận hủy đặt chỗ',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    color: Colors.red[700],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Bạn có chắc chắn muốn hủy đặt chỗ này không? Hành động này không thể hoàn tác.',
+                  style: TextStyle(fontSize: 15, color: Colors.grey[800]),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          'Không',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _cancelReservation(reservationId);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red[600],
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Đồng ý',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _cancelReservation(String reservationId) async {
+    // Hiển thị loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final result = await ReservationsService.cancel(reservationId);
+
+      // Đóng dialog loading
+      Navigator.of(context).pop();
+
+      if (result['success'] == true) {
+        // Hiển thị thông báo thành công
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Hủy đặt chỗ thành công'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Refresh danh sách
+        await fetchReservations();
+        await fetchSlots();
+      } else {
+        // Hiển thị thông báo lỗi
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Hủy đặt chỗ thất bại'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      // Đóng dialog loading
+      Navigator.of(context).pop();
+
+      // Hiển thị thông báo lỗi
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi kết nối: $e'), backgroundColor: Colors.red),
+      );
     }
   }
 }
