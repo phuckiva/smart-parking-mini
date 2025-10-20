@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "../../../../../../../iot"
+		},
+		{
+			"name": "test",
+			"path": "../../test"
+		},
+		{
+			"name": "IOT1",
+			"path": ".."
+		}
+	],
+	"settings": {}
+}

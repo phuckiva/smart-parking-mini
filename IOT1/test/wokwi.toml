@@ -1,0 +1,351 @@
+[wokwi]
+version = 1
+firmware = "../.pio/build/esp32dev/firmware.bin"
+elf = "../.pio/build/esp32dev/firmware.elf"
+
+[[wokwi.parts]]
+type = "wokwi-esp32-devkit-v1"
+id = "esp"
+top = 0
+left = 0
+attrs = { }
+
+# Slot 1 Components
+[[wokwi.parts]]
+type = "wokwi-hc-sr04"
+id = "ultrasonic1"
+top = -48
+left = 230.4
+attrs = { }
+
+[[wokwi.parts]]
+type = "wokwi-led"
+id = "led1_red"
+top = -67.2
+left = 364.8
+attrs = { color = "red" }
+
+[[wokwi.parts]]
+type = "wokwi-led"
+id = "led1_green"
+top = -67.2
+left = 403.2
+attrs = { color = "green" }
+
+[[wokwi.parts]]
+type = "wokwi-servo"
+id = "servo1"
+top = -96
+left = 460.8
+attrs = { }
+
+# Slot 2 Components
+[[wokwi.parts]]
+type = "wokwi-hc-sr04"
+id = "ultrasonic2"
+top = 48
+left = 230.4
+attrs = { }
+
+[[wokwi.parts]]
+type = "wokwi-led"
+id = "led2_red"
+top = 28.8
+left = 364.8
+attrs = { color = "red" }
+
+[[wokwi.parts]]
+type = "wokwi-led"
+id = "led2_green"
+top = 28.8
+left = 403.2
+attrs = { color = "green" }
+
+[[wokwi.parts]]
+type = "wokwi-servo"
+id = "servo2"
+top = 0
+left = 460.8
+attrs = { }
+
+# Slot 3 Components
+[[wokwi.parts]]
+type = "wokwi-hc-sr04"
+id = "ultrasonic3"
+top = 144
+left = 230.4
+attrs = { }
+
+[[wokwi.parts]]
+type = "wokwi-led"
+id = "led3_red"
+top = 124.8
+left = 364.8
+attrs = { color = "red" }
+
+[[wokwi.parts]]
+type = "wokwi-led"
+id = "led3_green"
+top = 124.8
+left = 403.2
+attrs = { color = "green" }
+
+[[wokwi.parts]]
+type = "wokwi-servo"
+id = "servo3"
+top = 96
+left = 460.8
+attrs = { }
+
+# Slot 4 Components
+[[wokwi.parts]]
+type = "wokwi-hc-sr04"
+id = "ultrasonic4"
+top = 240
+left = 230.4
+attrs = { }
+
+[[wokwi.parts]]
+type = "wokwi-led"
+id = "led4_red"
+top = 220.8
+left = 364.8
+attrs = { color = "red" }
+
+[[wokwi.parts]]
+type = "wokwi-led"
+id = "led4_green"
+top = 220.8
+left = 403.2
+attrs = { color = "green" }
+
+[[wokwi.parts]]
+type = "wokwi-servo"
+id = "servo4"
+top = 192
+left = 460.8
+attrs = { }
+
+# Wiring connections
+[[wokwi.connections]]
+from = "esp:4"
+to = "ultrasonic1:TRIG"
+color = "orange"
+
+[[wokwi.connections]]
+from = "esp:16"
+to = "ultrasonic1:ECHO"
+color = "yellow"
+
+[[wokwi.connections]]
+from = "esp:18"
+to = "led1_red:A"
+color = "red"
+
+[[wokwi.connections]]
+from = "esp:5"
+to = "led1_green:A"
+color = "green"
+
+[[wokwi.connections]]
+from = "esp:15"
+to = "servo1:PWM"
+color = "purple"
+
+[[wokwi.connections]]
+from = "esp:19"
+to = "ultrasonic2:TRIG"
+color = "orange"
+
+[[wokwi.connections]]
+from = "esp:21"
+to = "ultrasonic2:ECHO"
+color = "yellow"
+
+[[wokwi.connections]]
+from = "esp:22"
+to = "led2_red:A"
+color = "red"
+
+[[wokwi.connections]]
+from = "esp:23"
+to = "led2_green:A"
+color = "green"
+
+[[wokwi.connections]]
+from = "esp:13"
+to = "servo2:PWM"
+color = "purple"
+
+[[wokwi.connections]]
+from = "esp:25"
+to = "ultrasonic3:TRIG"
+color = "orange"
+
+[[wokwi.connections]]
+from = "esp:26"
+to = "ultrasonic3:ECHO"
+color = "yellow"
+
+[[wokwi.connections]]
+from = "esp:27"
+to = "led3_red:A"
+color = "red"
+
+[[wokwi.connections]]
+from = "esp:14"
+to = "led3_green:A"
+color = "green"
+
+[[wokwi.connections]]
+from = "esp:12"
+to = "servo3:PWM"
+color = "purple"
+
+[[wokwi.connections]]
+from = "esp:32"
+to = "ultrasonic4:TRIG"
+color = "orange"
+
+[[wokwi.connections]]
+from = "esp:33"
+to = "ultrasonic4:ECHO"
+color = "yellow"
+
+[[wokwi.connections]]
+from = "esp:2"
+to = "led4_red:A"
+color = "red"
+
+[[wokwi.connections]]
+from = "esp:17"
+to = "led4_green:A"
+color = "green"
+
+[[wokwi.connections]]
+from = "esp:0"
+to = "servo4:PWM"
+color = "purple"
+
+# Power connections
+[[wokwi.connections]]
+from = "esp:GND.1"
+to = "ultrasonic1:GND"
+color = "black"
+
+[[wokwi.connections]]
+from = "esp:3V3"
+to = "ultrasonic1:VCC"
+color = "red"
+
+[[wokwi.connections]]
+from = "esp:GND.2"
+to = "ultrasonic2:GND"
+color = "black"
+
+[[wokwi.connections]]
+from = "esp:3V3"
+to = "ultrasonic2:VCC"
+color = "red"
+
+[[wokwi.connections]]
+from = "esp:GND.1"
+to = "ultrasonic3:GND"
+color = "black"
+
+[[wokwi.connections]]
+from = "esp:3V3"
+to = "ultrasonic3:VCC"
+color = "red"
+
+[[wokwi.connections]]
+from = "esp:GND.2"
+to = "ultrasonic4:GND"
+color = "black"
+
+[[wokwi.connections]]
+from = "esp:3V3"
+to = "ultrasonic4:VCC"
+color = "red"
+
+# LED ground connections
+[[wokwi.connections]]
+from = "led1_red:C"
+to = "esp:GND.1"
+color = "black"
+
+[[wokwi.connections]]
+from = "led1_green:C"
+to = "esp:GND.1"
+color = "black"
+
+[[wokwi.connections]]
+from = "led2_red:C"
+to = "esp:GND.2"
+color = "black"
+
+[[wokwi.connections]]
+from = "led2_green:C"
+to = "esp:GND.2"
+color = "black"
+
+[[wokwi.connections]]
+from = "led3_red:C"
+to = "esp:GND.1"
+color = "black"
+
+[[wokwi.connections]]
+from = "led3_green:C"
+to = "esp:GND.1"
+color = "black"
+
+[[wokwi.connections]]
+from = "led4_red:C"
+to = "esp:GND.2"
+color = "black"
+
+[[wokwi.connections]]
+from = "led4_green:C"
+to = "esp:GND.2"
+color = "black"
+
+# Servo power connections
+[[wokwi.connections]]
+from = "servo1:V+"
+to = "esp:3V3"
+color = "red"
+
+[[wokwi.connections]]
+from = "servo1:GND"
+to = "esp:GND.1"
+color = "black"
+
+[[wokwi.connections]]
+from = "servo2:V+"
+to = "esp:3V3"
+color = "red"
+
+[[wokwi.connections]]
+from = "servo2:GND"
+to = "esp:GND.2"
+color = "black"
+
+[[wokwi.connections]]
+from = "servo3:V+"
+to = "esp:3V3"
+color = "red"
+
+[[wokwi.connections]]
+from = "servo3:GND"
+to = "esp:GND.1"
+color = "black"
+
+[[wokwi.connections]]
+from = "servo4:V+"
+to = "esp:3V3"
+color = "red"
+
+[[wokwi.connections]]
+from = "servo4:GND"
+to = "esp:GND.2"
+color = "black"

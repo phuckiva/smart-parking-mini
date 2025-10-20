@@ -17,6 +17,7 @@ router.use(authMiddleware.authenticate);
 // Routes cho users
 router.get('/', usersController.getAllUsers);
 router.get('/:id', usersController.getUserById);
+router.get('/license-plate/:license_plate', usersController.getUserByLicensePlate);
 router.post('/', authMiddleware.requireAdmin, usersController.createUser);
 router.put('/me', usersController.updateMe);
 // Admin: update/delete any user, set role

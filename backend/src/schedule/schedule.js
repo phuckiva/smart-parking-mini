@@ -12,7 +12,7 @@ async function autoUpdateJob() {
 }
 
 function startSchedule() {
-  cron.schedule('*/10 * * * * *', () => autoUpdateJob());
+  //cron.schedule('*/10 * * * * *', () => autoUpdateJob());
 }
 
 module.exports = {

@@ -1,0 +1,2 @@
+[wokwi]
+firmware = "./pio/build/esp32dev/firmware.bin"

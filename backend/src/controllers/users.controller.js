@@ -453,6 +453,88 @@ class UsersController {
             return responseHandler.error(res, e.message || 'Lỗi khi cập nhật role', 500);
         }
     }
+
+    /**
+     * @swagger
+     * /api/users/license-plate/{license_plate}:
+     *   get:
+     *     summary: Tìm người dùng theo biển số xe
+     *     tags: [Users]
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: license_plate
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Biển số xe của người dùng
+     *     responses:
+     *       200:
+     *         description: Thông tin người dùng
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 success:
+     *                   type: boolean
+     *                 message:
+     *                   type: string
+     *                 data:
+     *                   $ref: '#/components/schemas/User'
+     *       404:
+     *         description: Không tìm thấy người dùng
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/ErrorResponse'
+     *       401:
+     *         description: Chưa được xác thực
+     *         content:
+     *           application/json:
+     *             schema:
+     *               $ref: '#/components/schemas/ErrorResponse'
+     */
+    async getUserByLicensePlate(req, res) {
+        try {
+            const { license_plate } = req.params;
+
+            const { data: user, error } = await supabase
+                .from('users')
+                .select(`
+                    id, full_name, email, license_plate, created_at,
+                    user_roles(
+                        roles(role_name)
+                    )
+                `)
+                .eq('license_plate', license_plate)
+                .single();
+
+            if (error || !user) {
+                return responseHandler.error(res, 'Không tìm thấy người dùng', 404);
+            }
+
+            // Format dữ liệu để trả về
+            let roleName = null;
+            if (user.user_roles && Array.isArray(user.user_roles)) {
+                roleName = user.user_roles[0]?.roles?.role_name || null;
+            } else if (user.user_roles && typeof user.user_roles === 'object') {
+                roleName = user.user_roles.roles?.role_name || null;
+            }
+            const formattedUser = {
+                ...user,
+                role: roleName || 'UNASSIGNED',
+                user_roles: undefined
+            };
+
+            responseHandler.success(res, formattedUser, 'Lấy thông tin người dùng thành công');
+
+        } catch (error) {
+            console.error('Get user by license plate error:', error);
+            responseHandler.error(res, 'Lỗi server nội bộ', 500);
+        }
+    }
 }
 
 module.exports = new UsersController();
