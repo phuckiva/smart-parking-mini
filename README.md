@@ -168,7 +168,7 @@ Dự án được thực hiện bởi Nhóm 10:
 | STT | Vai trò                | Thành viên      |
 | :-- | :---------------------- | :-------------- |
 | 1   | Firmware Developer      | Nguyễn Quốc Tú |
-| 2   | Backend Developer & DevOps       | Lê Đăng Hoàng Tuấn |
+| 2   | Backend Developer  | Lê Đăng Hoàng Tuấn |
 | 3   | Database  & Firmware Developer    | Huỳnh Trọng Phúc |
 | 4   | Web App Developer  & Tester   | Trần Thị Kiều Liêu |
 | 5   | Mobile App Developer  & Tester  | Huỳnh Anh Tuấn |
