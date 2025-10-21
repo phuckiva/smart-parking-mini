@@ -20,6 +20,9 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
+# Install curl for HEALTHCHECK (alpine package: curl)
+RUN apk add --no-cache curl
+
 # Copy dependencies and source code
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
