@@ -29,7 +29,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
 
 // Routes
 app.use('/api', apiRoutes);
-
+app.get('/health', (req, res) => {
+  res.status(200).send('ok');
+});
 // Route mặc định
 app.get('/', (req, res) => {
     res.json({
