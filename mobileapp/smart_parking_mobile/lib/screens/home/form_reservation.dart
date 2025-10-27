@@ -8,16 +8,24 @@ class FormReservation extends StatelessWidget {
   final Map<String, dynamic> user;
   final String role;
 
+  final VoidCallback? onReservationSuccess;
+
   const FormReservation({
     Key? key,
     required this.token,
     required this.user,
     required this.role,
+    this.onReservationSuccess,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return _FormReservationBody(token: token, user: user, role: role);
+    return _FormReservationBody(
+      token: token,
+      user: user,
+      role: role,
+      onReservationSuccess: onReservationSuccess,
+    );
   }
 }
 
@@ -25,10 +33,12 @@ class _FormReservationBody extends StatefulWidget {
   final String token;
   final Map<String, dynamic> user;
   final String role;
+  final VoidCallback? onReservationSuccess;
   const _FormReservationBody({
     required this.token,
     required this.user,
     required this.role,
+    this.onReservationSuccess,
   });
 
   @override
@@ -149,23 +159,11 @@ class _FormReservationBodyState extends State<_FormReservationBody> {
   Future<void> bookSlot() async {
     if (selectedSlotId == null || startDateTime == null || endDateTime == null)
       return;
-    final now = DateTime.now();
-    if (startDateTime!.isBefore(now.add(const Duration(hours: 1)))) {
+    if (endDateTime!.isBefore(startDateTime!)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text(
-            'Thời gian bắt đầu phải lớn hơn hiện tại ít nhất 1 giờ!',
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-    if (endDateTime!.isBefore(startDateTime!.add(const Duration(hours: 1)))) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            'Thời gian kết thúc phải lớn hơn thời gian bắt đầu ít nhất 1 giờ!',
+            'Thời gian kết thúc phải lớn hơn thời gian bắt đầu!',
           ),
           backgroundColor: Colors.red,
         ),
@@ -184,13 +182,11 @@ class _FormReservationBodyState extends State<_FormReservationBody> {
       isBooking = false;
     });
     if (res['success'] == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Đặt chỗ thành công!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      Navigator.of(context).pop();
+      // Close the dialog first and let HomeScreen show the success snackbar
+      Navigator.of(context, rootNavigator: true).pop();
+      if (widget.onReservationSuccess != null) {
+        widget.onReservationSuccess!();
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -203,22 +199,10 @@ class _FormReservationBodyState extends State<_FormReservationBody> {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final isStartValid =
-        startDateTime != null &&
-        startDateTime!.isAfter(now.add(const Duration(hours: 1)));
-    final isEndValid =
-        endDateTime != null &&
-        endDateTime!.isAfter(
-          startDateTime != null
-              ? startDateTime!.add(const Duration(hours: 1))
-              : now,
-        );
-    final canSelectSlot = isStartValid && isEndValid;
-    final isTimeInvalid =
-        startDateTime != null &&
-        endDateTime != null &&
-        (!isStartValid || !isEndValid);
+  final isStartValid = startDateTime != null;
+  final isEndValid = endDateTime != null && startDateTime != null && endDateTime!.isAfter(startDateTime!);
+  final canSelectSlot = isStartValid && isEndValid;
+  final isTimeInvalid = startDateTime != null && endDateTime != null && !isEndValid;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(

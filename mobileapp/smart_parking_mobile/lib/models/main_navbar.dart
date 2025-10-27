@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/history/history_screen.dart';
 import '../screens/profile/profile_screen.dart';
+import '../screens/history/history_reservations_screen.dart';
 
 class MainNavbar extends StatefulWidget {
   final String token;
@@ -29,6 +30,7 @@ class _MainNavbarState extends State<MainNavbar> {
     _pages = [
       HomeScreen(token: widget.token, user: widget.user, role: widget.role),
       HistoryScreen(token: widget.token, user: widget.user, role: widget.role),
+      HistoryReservationsScreen(token: widget.token, user: widget.user, role: widget.role),
       ProfileScreen(token: widget.token, user: widget.user, role: widget.role),
     ];
   }
@@ -48,9 +50,11 @@ class _MainNavbarState extends State<MainNavbar> {
         onTap: _onItemTapped,
         selectedItemColor: Colors.blue[700],
         unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Lịch sử'),
+          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Lịch sử đỗ xe'),
+          BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: 'Lịch sử đặt chỗ'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),

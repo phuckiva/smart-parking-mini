@@ -4,6 +4,45 @@ const responseHandler = require('../utils/response.handler');
 class SlotsController {
     /**
      * @swagger
+     * /api/slots/effective-stats:
+     *   get:
+     *     summary: Lấy thống kê slot hiệu dụng thực tế
+     *     tags: [Parking Slots]
+     *     security:
+     *       - bearerAuth: []
+     *     responses:
+     *       200:
+     *         description: Thống kê slot hiệu dụng
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: array
+     *               items:
+     *                 type: object
+     *                 properties:
+     *                   total_slots:
+     *                     type: integer
+     *                   occupied_now:
+     *                     type: integer
+     *                   future_active_reservations:
+     *                     type: integer
+     *                   available_effective:
+     *                     type: integer
+     *       401:
+     *         description: Chưa được xác thực
+     */
+    async getEffectiveSlotStats(req, res) {
+        try {
+            const stats = await slotsService.getEffectiveSlotStats();
+            responseHandler.success(res, stats, 'Lấy thống kê slot hiệu dụng thành công');
+        } catch (error) {
+            console.error('Get effective slot stats error:', error);
+            responseHandler.error(res, error.message, 500);
+        }
+    }
+// ...rest of SlotsController methods...
+    /**
+     * @swagger
      * /api/slots:
      *   get:
      *     summary: Lấy danh sách tất cả chỗ đỗ xe

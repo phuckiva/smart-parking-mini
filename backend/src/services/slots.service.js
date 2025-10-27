@@ -1,6 +1,16 @@
+const SlotEffectiveStat = require('../models/slotEffectiveStat.model');
 const supabase = require('./db');
 
 class SlotsService {
+        // Lấy thống kê slot hiệu dụng thực tế (dựa trên truy vấn SQL phức tạp)
+    async getEffectiveSlotStats() {
+        // Gọi function get_effective_slot_stats từ Supabase
+        const { data, error } = await supabase.rpc('get_effective_slot_stats');
+        if (error || !data) {
+            throw new Error('Không thể lấy thống kê slot hiệu dụng: ' + (error?.message || 'Unknown error'));
+        }
+        return data.map(row => new SlotEffectiveStat(row));
+    }
     // Lấy tất cả chỗ đỗ xe với phân trang và lọc
     async getAllSlots(options = {}) {
         try {

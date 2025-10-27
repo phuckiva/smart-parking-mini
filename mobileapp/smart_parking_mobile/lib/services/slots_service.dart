@@ -7,6 +7,36 @@ import 'token_service.dart';
 class SlotsService {
   static const String _basePath = '/slots';
 
+  /// Lấy thống kê slot hiệu dụng thực tế (API /slots/effective-stats)
+  static Future<Map<String, dynamic>> getEffectiveSlotStats() async {
+    try {
+      final url = Uri.parse('${ApiConfig.baseApi}$_basePath/effective-stats');
+      final headers = await TokenService.getAuthHeaders();
+
+      final response = await http.get(url, headers: headers);
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && responseData['success'] == true) {
+        return {
+          'success': true,
+          'data': responseData['data'],
+          'message': responseData['message'],
+        };
+      } else {
+        if (response.statusCode == 401) {
+          await TokenService.clearTokenData();
+        }
+        return {
+          'success': false,
+          'message': responseData['message'] ?? 'Lấy thống kê slot thất bại',
+          'error': responseData['error'],
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Lỗi kết nối: $e'};
+    }
+  }
+  
   /// Lấy danh sách chỗ đỗ xe còn trống
   static Future<Map<String, dynamic>> getAvailableSlots() async {
     try {

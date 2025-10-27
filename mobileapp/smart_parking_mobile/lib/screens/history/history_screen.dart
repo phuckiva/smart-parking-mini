@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../services/parking_service.dart';
+import '../../services/slots_service.dart';
 
 class HistoryScreen extends StatefulWidget {
   final String token;
@@ -17,18 +18,36 @@ class HistoryScreen extends StatefulWidget {
   State<HistoryScreen> createState() => _HistoryScreenState();
 }
 
+
 class _HistoryScreenState extends State<HistoryScreen> {
   List<dynamic> history = [];
+  List<dynamic> filteredHistory = [];
+  List<dynamic> slots = [];
   int page = 1;
   int limit = 10;
   int totalPages = 1;
   bool isLoading = false;
   String? errorMsg;
+  // Filter state
+  String? selectedSlotId;
+  DateTime? filterStart;
+  DateTime? filterEnd;
+
 
   @override
   void initState() {
     super.initState();
     fetchHistory();
+    fetchSlots();
+  }
+
+  Future<void> fetchSlots() async {
+    final res = await SlotsService.getAllSlots();
+    if (res['success'] == true && res['data'] != null) {
+      setState(() {
+        slots = res['data']['slots'] ?? [];
+      });
+    }
   }
 
   Future<void> fetchHistory({int? newPage}) async {
@@ -48,12 +67,46 @@ class _HistoryScreenState extends State<HistoryScreen> {
         totalPages = res['data']['pagination']['totalPages'] ?? 1;
         isLoading = false;
       });
+      applyFilter();
     } else {
       setState(() {
         errorMsg = res['message'] ?? 'Lỗi khi lấy lịch sử';
         isLoading = false;
       });
     }
+  }
+
+  void applyFilter() {
+    List<dynamic> result = List.from(history);
+    // Filter by slot
+    if (selectedSlotId != null && selectedSlotId!.isNotEmpty) {
+      result = result.where((h) =>
+        h['parking_slots'] != null &&
+        (h['parking_slots']['id'].toString() == selectedSlotId)
+      ).toList();
+    }
+    // Filter by time
+    if (filterStart != null) {
+      result = result.where((h) {
+        final checkIn = h['check_in_time'];
+        if (checkIn == null) return false;
+        final dt = DateTime.tryParse(checkIn);
+        if (dt == null) return false;
+        return !dt.isBefore(filterStart!);
+      }).toList();
+    }
+    if (filterEnd != null) {
+      result = result.where((h) {
+        final checkOut = h['check_out_time'];
+        if (checkOut == null) return false;
+        final dt = DateTime.tryParse(checkOut);
+        if (dt == null) return false;
+        return !dt.isAfter(filterEnd!);
+      }).toList();
+    }
+    setState(() {
+      filteredHistory = result;
+    });
   }
 
   String formatDate(String dateStr) {
@@ -65,9 +118,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
-  int get activeCount => history.where((h) => h['status'] == 'active').length;
+  int get activeCount => filteredHistory.where((h) => h['status'] == 'active').length;
   int get completedCount =>
-      history.where((h) => h['status'] != 'active').length;
+    filteredHistory.where((h) => h['status'] != 'active').length;
 
   @override
   Widget build(BuildContext context) {
@@ -134,7 +187,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             child: _buildStatCard(
                               icon: Icons.history,
                               label: 'Tổng số',
-                              value: '${history.length}',
+                              value: '${filteredHistory.length}',
                               color: Colors.blue[300]!,
                             ),
                           ),
@@ -143,13 +196,129 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ),
                   ),
 
+                  // Search/Filter Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            // Slot Dropdown
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                value: selectedSlotId,
+                                isExpanded: true,
+                                decoration: const InputDecoration(
+                                  labelText: 'Chọn chỗ đỗ',
+                                  border: OutlineInputBorder(),
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                ),
+                                items: [
+                                  const DropdownMenuItem<String>(
+                                    value: null,
+                                    child: Text('Tất cả chỗ đỗ'),
+                                  ),
+                                  ...slots.map<DropdownMenuItem<String>>((slot) => DropdownMenuItem<String>(
+                                    value: slot['id'].toString(),
+                                    child: Text(slot['slot_name'] ?? ''),
+                                  ))
+                                ],
+                                onChanged: (val) {
+                                  setState(() {
+                                    selectedSlotId = val;
+                                  });
+                                  applyFilter();
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            // Start Date
+                            Expanded(
+                              child: InkWell(
+                                onTap: () async {
+                                  final picked = await showDatePicker(
+                                    context: context,
+                                    initialDate: filterStart ?? DateTime.now(),
+                                    firstDate: DateTime(2020),
+                                    lastDate: DateTime(2100),
+                                  );
+                                  if (picked != null) {
+                                    setState(() {
+                                      filterStart = picked;
+                                    });
+                                    applyFilter();
+                                  }
+                                },
+                                child: InputDecorator(
+                                  decoration: const InputDecoration(
+                                    labelText: 'Từ ngày',
+                                    border: OutlineInputBorder(),
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  ),
+                                  child: Text(
+                                    filterStart != null ? DateFormat('dd/MM/yyyy').format(filterStart!) : 'Từ ngày',
+                                    style: TextStyle(color: filterStart != null ? Colors.black : Colors.grey[600]),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            // End Date
+                            Expanded(
+                              child: InkWell(
+                                onTap: () async {
+                                  final picked = await showDatePicker(
+                                    context: context,
+                                    initialDate: filterEnd ?? DateTime.now(),
+                                    firstDate: DateTime(2020),
+                                    lastDate: DateTime(2100),
+                                  );
+                                  if (picked != null) {
+                                    setState(() {
+                                      filterEnd = picked;
+                                    });
+                                    applyFilter();
+                                  }
+                                },
+                                child: InputDecorator(
+                                  decoration: const InputDecoration(
+                                    labelText: 'Đến ngày',
+                                    border: OutlineInputBorder(),
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  ),
+                                  child: Text(
+                                    filterEnd != null ? DateFormat('dd/MM/yyyy').format(filterEnd!) : 'Đến ngày',
+                                    style: TextStyle(color: filterEnd != null ? Colors.black : Colors.grey[600]),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.clear),
+                              tooltip: 'Xóa bộ lọc',
+                              onPressed: () {
+                                setState(() {
+                                  selectedSlotId = null;
+                                  filterStart = null;
+                                  filterEnd = null;
+                                });
+                                applyFilter();
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
                   // History List
                   Expanded(
                     child: ListView.builder(
                       padding: const EdgeInsets.all(16),
-                      itemCount: history.length,
+                      itemCount: filteredHistory.length,
                       itemBuilder: (context, idx) {
-                        final item = history[idx];
+                        final item = filteredHistory[idx];
                         final slotName =
                             item['parking_slots']?['slot_name'] ?? '---';
                         final checkIn = item['check_in_time'] ?? '';

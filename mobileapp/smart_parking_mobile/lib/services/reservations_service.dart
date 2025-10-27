@@ -16,7 +16,7 @@ class ReservationsService {
       final response = await http.get(url, headers: headers);
       final responseData = jsonDecode(response.body);
 
-      if (response.statusCode == 200 && responseData['success'] == true) {
+  if (response.statusCode >= 200 && response.statusCode < 300 && responseData['success'] == true) {
         return {
           'success': true,
           'data': responseData['data'],
@@ -63,7 +63,7 @@ class ReservationsService {
 
       final responseData = jsonDecode(response.body);
 
-      if (response.statusCode == 200 && responseData['success'] == true) {
+  if (response.statusCode >= 200 && response.statusCode < 300 && responseData['success'] == true) {
         return {
           'success': true,
           'data': responseData['data'],
@@ -94,7 +94,7 @@ class ReservationsService {
       final response = await http.delete(url, headers: headers);
       final responseData = jsonDecode(response.body);
 
-      if (response.statusCode == 200 && responseData['success'] == true) {
+  if (response.statusCode >= 200 && response.statusCode < 300 && responseData['success'] == true) {
         return {
           'success': true,
           'data': responseData['data'],
@@ -134,7 +134,7 @@ class ReservationsService {
       final response = await http.get(Uri.parse(url), headers: headers);
       final responseData = jsonDecode(response.body);
 
-      if (response.statusCode == 200 && responseData['success'] == true) {
+  if (response.statusCode >= 200 && response.statusCode < 300 && responseData['success'] == true) {
         return {
           'success': true,
           'data': responseData['data'],

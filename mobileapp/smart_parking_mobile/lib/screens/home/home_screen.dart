@@ -20,22 +20,33 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  Map<String, dynamic>? effectiveStats;
   int currentPage = 1;
   int totalPages = 1;
-  int currentReservationPage = 1;
-  int totalReservationPages = 1;
   List<dynamic> slots = [];
   bool isLoading = false;
 
-  List<dynamic> reservations = [];
-  bool isLoadingReservations = false;
-  String? errorReservations;
+  // Removed reservation history state variables
 
   @override
   void initState() {
     super.initState();
     fetchSlots();
-    fetchReservations();
+    fetchEffectiveStats();
+  }
+
+  Future<void> fetchEffectiveStats() async {
+    final result = await SlotsService.getEffectiveSlotStats();
+    print('[DEBUG] getEffectiveSlotStats response: $result');
+    if (result['success'] == true && result['data'] is List && result['data'].isNotEmpty) {
+      setState(() {
+        effectiveStats = result['data'][0];
+      });
+    } else {
+      setState(() {
+        effectiveStats = null;
+      });
+    }
   }
 
   Future<void> fetchSlots() async {
@@ -54,27 +65,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> fetchReservations() async {
-    setState(() {
-      isLoadingReservations = true;
-      errorReservations = null;
-    });
-    final res = await ReservationsService.listMine();
-    if (res['success'] == true && res['data'] != null) {
-      final allReservations = res['data']['reservations'] ?? [];
-      setState(() {
-        reservations = allReservations;
-        totalReservationPages = (reservations.length / 5).ceil();
-        currentReservationPage = 1;
-        isLoadingReservations = false;
-      });
-    } else {
-      setState(() {
-        errorReservations = res['message'] ?? 'Lỗi khi lấy lịch sử đặt chỗ';
-        isLoadingReservations = false;
-      });
-    }
-  }
 
   List<dynamic> get pagedSlots {
     final start = (currentPage - 1) * 5;
@@ -82,11 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return slots.sublist(start, end);
   }
 
-  List<dynamic> get pagedReservations {
-    final start = (currentReservationPage - 1) * 5;
-    final end = (start + 5).clamp(0, reservations.length);
-    return reservations.sublist(start, end);
-  }
+  // Đã bỏ getter pagedReservations
 
   int get availableCount =>
       slots.where((s) => s['status'] == 'available').length;
@@ -117,13 +103,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: () async {
-                await Future.wait([fetchSlots(), fetchReservations()]);
+                await fetchSlots();
+                await fetchEffectiveStats();
               },
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // ...existing code...
                     // Header Statistics
                     Container(
                       decoration: BoxDecoration(
@@ -407,374 +395,57 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     const SizedBox(height: 8),
 
-                    // Lịch sử đặt chỗ
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.history,
-                            color: Colors.blue[700],
-                            size: 22,
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'Lịch sử đặt chỗ',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: isLoadingReservations
-                          ? const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(32),
-                                child: CircularProgressIndicator(),
-                              ),
-                            )
-                          : errorReservations != null
-                          ? Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(32),
-                                child: Text(
-                                  errorReservations!,
-                                  style: const TextStyle(color: Colors.red),
-                                ),
-                              ),
-                            )
-                          : reservations.isEmpty
-                          ? Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(32),
-                                child: Column(
-                                  children: [
-                                    Icon(
-                                      Icons.inbox_outlined,
-                                      size: 64,
-                                      color: Colors.grey[300],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'Chưa có lịch sử đặt chỗ',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                          : Column(
-                              children: [
-                                ListView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: pagedReservations.length,
-                                  itemBuilder: (context, idx) {
-                                    final item = pagedReservations[idx];
-                                    final slotName =
-                                        item['parking_slots']?['slot_name'] ??
-                                        '---';
-                                    final startTime = item['start_time'] ?? '';
-                                    final endTime = item['end_time'] ?? '';
-                                    final status = item['status'] ?? '';
-                                    final isActive = status == 'active';
-                                    final isCancelled = status == 'cancelled';
-                                    final isCompleted = status == 'completed';
-                                    Color borderColor;
-                                    Color bgColor;
-                                    Color textColor;
-                                    String statusText;
-                                    if (isActive) {
-                                      borderColor = Colors.green[300]!;
-                                      bgColor = Colors.green[50]!;
-                                      textColor = Colors.green[800]!;
-                                      statusText = 'Đang đặt';
-                                    } else if (isCancelled) {
-                                      borderColor = Colors.red[300]!;
-                                      bgColor = Colors.red[50]!;
-                                      textColor = Colors.red[800]!;
-                                      statusText = 'Đã hủy';
-                                    } else if (isCompleted) {
-                                      borderColor = Colors.blue[300]!;
-                                      bgColor = Colors.blue[50]!;
-                                      textColor = Colors.blue[800]!;
-                                      statusText = 'Hoàn thành';
-                                    } else {
-                                      borderColor = Colors.grey[300]!;
-                                      bgColor = Colors.grey[50]!;
-                                      textColor = Colors.grey[800]!;
-                                      statusText = status;
-                                    }
-                                    return Container(
-                                      margin: const EdgeInsets.only(bottom: 12),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                          color: borderColor,
-                                          width: 1,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(
-                                              0.05,
-                                            ),
-                                            blurRadius: 10,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(16),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Container(
-                                                  padding: const EdgeInsets.all(
-                                                    8,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: bgColor,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          10,
-                                                        ),
-                                                  ),
-                                                  child: Icon(
-                                                    Icons.local_parking,
-                                                    color: textColor,
-                                                    size: 20,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 12),
-                                                Expanded(
-                                                  child: Text(
-                                                    slotName,
-                                                    style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 16,
-                                                    ),
-                                                  ),
-                                                ),
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 12,
-                                                        vertical: 6,
-                                                      ),
-                                                  decoration: BoxDecoration(
-                                                    color: bgColor,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          12,
-                                                        ),
-                                                  ),
-                                                  child: Text(
-                                                    statusText,
-                                                    style: TextStyle(
-                                                      color: textColor,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 12,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 12),
-                                            // Nút hủy cho reservation active
-                                            if (isActive)
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                  bottom: 12,
-                                                ),
-                                                child: Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.end,
-                                                  children: [
-                                                    ElevatedButton.icon(
-                                                      onPressed: () =>
-                                                          _showCancelDialog(
-                                                            item['id']
-                                                                .toString(),
-                                                          ),
-                                                      icon: const Icon(
-                                                        Icons.cancel_outlined,
-                                                        size: 16,
-                                                      ),
-                                                      label: const Text(
-                                                        'Hủy đặt chỗ',
-                                                      ),
-                                                      style: ElevatedButton.styleFrom(
-                                                        backgroundColor:
-                                                            Colors.red[50],
-                                                        foregroundColor:
-                                                            Colors.red[700],
-                                                        elevation: 0,
-                                                        padding:
-                                                            const EdgeInsets.symmetric(
-                                                              horizontal: 16,
-                                                              vertical: 8,
-                                                            ),
-                                                        shape: RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                8,
-                                                              ),
-                                                          side: BorderSide(
-                                                            color: Colors
-                                                                .red[200]!,
-                                                            width: 1,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            Container(
-                                              padding: const EdgeInsets.all(12),
-                                              decoration: BoxDecoration(
-                                                color: Colors.grey[50],
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                              ),
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Row(
-                                                    children: [
-                                                      Icon(
-                                                        Icons.login,
-                                                        size: 16,
-                                                        color: Colors.blue[400],
-                                                      ),
-                                                      const SizedBox(width: 4),
-                                                      Text(
-                                                        'Từ: ${_formatDate(startTime)}',
-                                                        style: const TextStyle(
-                                                          fontSize: 12,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  const SizedBox(height: 2),
-                                                  Row(
-                                                    children: [
-                                                      Icon(
-                                                        Icons.logout,
-                                                        size: 16,
-                                                        color: Colors.red[400],
-                                                      ),
-                                                      const SizedBox(width: 4),
-                                                      Text(
-                                                        'Đến: ${_formatDate(endTime)}',
-                                                        style: const TextStyle(
-                                                          fontSize: 12,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                if (totalReservationPages > 1)
-                                  Container(
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: 0,
-                                      vertical: 16,
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 12,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.05),
-                                          blurRadius: 10,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(Icons.chevron_left),
-                                          onPressed: currentReservationPage > 1
-                                              ? () {
-                                                  setState(() {
-                                                    currentReservationPage--;
-                                                  });
-                                                }
-                                              : null,
-                                          color: Colors.blue[700],
-                                          disabledColor: Colors.grey[300],
-                                        ),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 8,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue[50],
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            'Trang $currentReservationPage/$totalReservationPages',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.blue[700],
-                                            ),
-                                          ),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.chevron_right),
-                                          onPressed:
-                                              currentReservationPage <
-                                                  totalReservationPages
-                                              ? () {
-                                                  setState(() {
-                                                    currentReservationPage++;
-                                                  });
-                                                }
-                                              : null,
-                                          color: Colors.blue[700],
-                                          disabledColor: Colors.grey[300],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                              ],
-                            ),
-                    ),
-
+                    // Đã bỏ lịch sử đặt chỗ và phân trang liên quan
                     const SizedBox(height: 24),
+
+                    // Thông báo số slot còn có thể đặt (effective) - chuyển xuống trên nút Đặt chỗ
+                    if (effectiveStats != null)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
+                          decoration: BoxDecoration(
+                            color: (effectiveStats!['available_effective'] ?? 0) <= 0
+                                ? Colors.red[50]
+                                : Colors.blue[50],
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: (effectiveStats!['available_effective'] ?? 0) <= 0
+                                  ? Colors.red[200]!
+                                  : Colors.blue[200]!,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                (effectiveStats!['available_effective'] ?? 0) <= 0
+                                    ? Icons.warning_amber_rounded
+                                    : Icons.info_outline,
+                                color: (effectiveStats!['available_effective'] ?? 0) <= 0
+                                    ? Colors.red[700]
+                                    : Colors.blue[700],
+                                size: 26,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  (effectiveStats!['available_effective'] ?? 0) <= 0
+                                      ? 'Đã hết chỗ để đặt'
+                                      : 'Số chỗ còn có thể đặt: ${effectiveStats!['available_effective']}',
+                                  style: TextStyle(
+                                    color: (effectiveStats!['available_effective'] ?? 0) <= 0
+                                        ? Colors.red[900]
+                                        : Colors.blue[900],
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 17,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
 
                     // Nút Đặt chỗ
                     Padding(
@@ -794,51 +465,67 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                         child: ElevatedButton(
-                          onPressed: () {
-                            showGeneralDialog(
-                              context: context,
-                              barrierDismissible: true,
-                              barrierLabel: 'Đặt chỗ',
-                              pageBuilder:
-                                  (context, animation, secondaryAnimation) {
-                                    return SafeArea(
-                                      child: Scaffold(
-                                        appBar: AppBar(
-                                          title: const Text(
-                                            'Đặt chỗ theo thời gian',
-                                          ),
-                                          backgroundColor: Colors.blue[700],
-                                          leading: IconButton(
-                                            icon: const Icon(Icons.close),
-                                            onPressed: () =>
-                                                Navigator.of(context).pop(),
-                                          ),
-                                        ),
-                                        body: FormReservation(
-                                          token: widget.token,
-                                          user: widget.user,
-                                          role: widget.role,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                              transitionBuilder:
-                                  (
-                                    context,
-                                    animation,
-                                    secondaryAnimation,
-                                    child,
-                                  ) {
-                                    return SlideTransition(
-                                      position: Tween<Offset>(
-                                        begin: const Offset(0, 1),
-                                        end: Offset.zero,
-                                      ).animate(animation),
-                                      child: child,
-                                    );
-                                  },
-                            );
-                          },
+                          onPressed: (effectiveStats != null && (effectiveStats!['available_effective'] ?? 0) > 0)
+                              ? () {
+                                  final parentContext = context;
+                                  showGeneralDialog(
+                                            context: parentContext,
+                                    barrierDismissible: true,
+                                    barrierLabel: 'Đặt chỗ',
+                                    pageBuilder:
+                                                (dialogContext, animation, secondaryAnimation) {
+                                                  return SafeArea(
+                                                    child: Scaffold(
+                                                      appBar: AppBar(
+                                                        title: const Text(
+                                                          'Đặt chỗ theo thời gian',
+                                                        ),
+                                                        backgroundColor: Colors.blue[700],
+                                                        leading: IconButton(
+                                                          icon: const Icon(Icons.close),
+                                                          onPressed: () => Navigator.of(dialogContext).pop(),
+                                                        ),
+                                                      ),
+                                                      body: FormReservation(
+                                                        token: widget.token,
+                                                        user: widget.user,
+                                                        role: widget.role,
+                                                        onReservationSuccess: () async {
+                                                          await fetchSlots();
+                                                          await fetchEffectiveStats();
+                                                          // show success snackbar from parentContext after refresh so user can see it
+                                                          Future.delayed(const Duration(milliseconds: 300), () {
+                                                            ScaffoldMessenger.of(parentContext).showSnackBar(
+                                                              SnackBar(
+                                                                content: const Text('Đặt chỗ thành công!'),
+                                                                backgroundColor: Colors.green,
+                                                                behavior: SnackBarBehavior.floating,
+                                                              ),
+                                                            );
+                                                          });
+                                                        },
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                    transitionBuilder:
+                                        (
+                                          context,
+                                          animation,
+                                          secondaryAnimation,
+                                          child,
+                                        ) {
+                                          return SlideTransition(
+                                            position: Tween<Offset>(
+                                              begin: const Offset(0, 1),
+                                              end: Offset.zero,
+                                            ).animate(animation),
+                                            child: child,
+                                          );
+                                        },
+                                  );
+                                }
+                              : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blue[600],
                             foregroundColor: Colors.white,
@@ -1035,7 +722,6 @@ class _HomeScreenState extends State<HomeScreen> {
         );
 
         // Refresh danh sách
-        await fetchReservations();
         await fetchSlots();
       } else {
         // Hiển thị thông báo lỗi

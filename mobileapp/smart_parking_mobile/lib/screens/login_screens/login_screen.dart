@@ -19,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLoading = false;
 
   void _login() async {
+    print('hello');
     if (!_formKey.currentState!.validate()) return;
     setState(() {
       isLoading = true;

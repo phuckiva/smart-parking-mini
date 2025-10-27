@@ -14,6 +14,9 @@ const router = express.Router();
 // Tất cả routes slots đều cần xác thực
 router.use(authMiddleware.authenticate);
 
+// Thống kê slot hiệu dụng (dùng cho dashboard hoặc kiểm tra thực tế)
+router.get('/effective-stats', slotsController.getEffectiveSlotStats);
+
 // Routes công khai (cho tất cả user đã đăng nhập)
 router.get('/available', slotsController.getAvailableSlots);
 router.get('/available-by-time', slotsController.getAvailableSlotsByTimeRange);
