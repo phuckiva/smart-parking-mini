@@ -58,7 +58,7 @@ export default function AdminHistoryPage() {
           >
             <i className="bi bi-arrow-left"></i>
             Quay lại
-          </button>
+         </button>
           <div>
             <h1 className="h4 mb-1 fw-bold text-dark">Lịch sử đậu xe</h1>
             <p className="text-muted mb-0 small">Quản lý và theo dõi tất cả hoạt động đậu xe</p>
