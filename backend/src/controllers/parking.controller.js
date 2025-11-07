@@ -46,11 +46,16 @@ class ParkingHistoryController {
      */
     async checkIn(req, res) {
         try {
-            const { slot_id } = req.body;
-            const userId = req.user.userId;
+            const { slot_id, user_id, license_plate } = req.body;
+            // Sử dụng user_id từ body nếu có, không thì dùng từ JWT
+            const userId = user_id || req.user.userId;
 
             if (!slot_id) {
                 return responseHandler.error(res, 'ID chỗ đỗ là bắt buộc', 400);
+            }
+
+            if (!userId) {
+                return responseHandler.error(res, 'User ID là bắt buộc', 400);
             }
 
             // Kiểm tra user có check-in tại chỗ nào khác không
@@ -80,13 +85,20 @@ class ParkingHistoryController {
                 return responseHandler.error(res, 'Chỗ đỗ không khả dụng', 400);
             }
 
-            // Tạo lịch sử check-in
+            // Tạo lịch sử check-in (tạm thời không bao gồm license_plate)
+            const insertData = {
+                slot_id,
+                user_id: userId
+            };
+            
+            // TODO: Thêm license_plate khi đã update database schema
+            // if (license_plate) {
+            //     insertData.license_plate = license_plate;
+            // }
+            
             const { data: history, error: historyError } = await supabase
                 .from('parking_history')
-                .insert([{
-                    slot_id,
-                    user_id: userId
-                }])
+                .insert([insertData])
                 .select()
                 .single();
 
