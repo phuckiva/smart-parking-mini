@@ -2,6 +2,83 @@ const supabase = require('../services/db');
 const responseHandler = require('../utils/response.handler');
 
 class ParkingHistoryController {
+        // Admin check-in cho user bất kỳ
+        async checkInForUser(req, res) {
+            try {
+                if (req.user.role !== 'ADMIN') return responseHandler.error(res, 'Không có quyền', 403);
+                const { slot_id, user_id } = req.body;
+                if (!slot_id || !user_id) {
+                    return responseHandler.error(res, 'slot_id và user_id là bắt buộc', 400);
+                }
+                // Kiểm tra user có check-in tại chỗ nào khác không
+                const { data: activeCheckin } = await supabase
+                    .from('parking_history')
+                    .select('id, parking_slots(slot_name)')
+                    .eq('user_id', user_id)
+                    .is('check_out_time', null)
+                    .single();
+                if (activeCheckin) {
+                    return responseHandler.error(res, `User này đang đỗ xe tại ${activeCheckin.parking_slots.slot_name}. Vui lòng check-out trước khi check-in chỗ mới`, 400);
+                }
+                // Kiểm tra chỗ đỗ có tồn tại và available không
+                const { data: slot, error: slotError } = await supabase
+                    .from('parking_slots')
+                    .select('*')
+                    .eq('id', slot_id)
+                    .single();
+                if (slotError || !slot) {
+                    return responseHandler.error(res, 'Không tìm thấy chỗ đỗ', 404);
+                }
+                if (slot.status !== 'available') {
+                    return responseHandler.error(res, 'Chỗ đỗ không khả dụng', 400);
+                }
+                // Tạo lịch sử check-in
+                const history = await require('../models/parkingHistory.model').checkInForUser({ slot_id, user_id });
+                // Cập nhật trạng thái slot thành occupied
+                await supabase
+                    .from('parking_slots')
+                    .update({ status: 'occupied' })
+                    .eq('id', slot_id);
+                responseHandler.success(res, {
+                    history,
+                    slot: { ...slot, status: 'occupied' }
+                }, 'Check-in thành công', 201);
+            } catch (error) {
+                console.error('Admin check-in error:', error);
+                responseHandler.error(res, 'Lỗi server nội bộ', 500);
+            }
+        }
+
+        // Admin check-out cho user bất kỳ
+        async checkOutForUser(req, res) {
+            try {
+                if (req.user.role !== 'ADMIN') return responseHandler.error(res, 'Không có quyền', 403);
+                const { user_id } = req.body;
+                if (!user_id) {
+                    return responseHandler.error(res, 'user_id là bắt buộc', 400);
+                }
+                // Tìm phiên check-in đang hoạt động
+                const parkingHistoryModel = require('../models/parkingHistory.model');
+                let updatedHistory;
+                try {
+                    updatedHistory = await parkingHistoryModel.checkOutForUser({ user_id });
+                } catch (err) {
+                    return responseHandler.error(res, err.message || 'Không có phiên đỗ xe nào đang hoạt động', 400);
+                }
+                // Cập nhật trạng thái slot thành available
+                await supabase
+                    .from('parking_slots')
+                    .update({ status: 'available' })
+                    .eq('id', updatedHistory.slot_id);
+                responseHandler.success(res, {
+                    history: updatedHistory,
+                    slot_id: updatedHistory.slot_id
+                }, 'Check-out thành công');
+            } catch (error) {
+                console.error('Admin check-out error:', error);
+                responseHandler.error(res, 'Lỗi server nội bộ', 500);
+            }
+        }
     /**
      * @swagger
      * /api/parking/checkin:

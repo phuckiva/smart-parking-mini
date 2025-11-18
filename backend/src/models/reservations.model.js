@@ -69,6 +69,18 @@ const Reservations = {
     if (error) throw error;
     return data;
   },
+  
+  // Tạo reservation cho user bất kỳ (admin dùng)
+  async createForUser({ slot_id, user_id, start_time, end_time }) {
+    const payload = { slot_id, user_id, start_time, end_time, status: 'active' };
+    const { data, error } = await supabase
+      .from(TABLE)
+      .insert([payload])
+      .select('*, parking_slots(slot_name)')
+      .single();
+    if (error) throw error;
+    return data;
+  },
 };
 
 module.exports = Reservations;

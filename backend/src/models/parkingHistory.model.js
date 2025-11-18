@@ -34,6 +34,37 @@ const ParkingHistory = {
     if (error) throw error;
     return data;
   },
+
+  // Tạo parking history cho user bất kỳ (admin dùng)
+  async checkInForUser({ slot_id, user_id }) {
+    const { data, error } = await supabase
+      .from(TABLE)
+      .insert([{ slot_id, user_id }])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async checkOutForUser({ user_id }) {
+    // Tìm phiên check-in đang hoạt động của user này
+    const { data: activeHistory, error: historyError } = await supabase
+      .from(TABLE)
+      .select('*')
+      .eq('user_id', user_id)
+      .is('check_out_time', null)
+      .single();
+    if (historyError || !activeHistory) throw historyError || new Error('Không có phiên đỗ xe nào đang hoạt động');
+    // Cập nhật check-out time
+    const { data: updatedHistory, error: updateError } = await supabase
+      .from(TABLE)
+      .update({ check_out_time: new Date().toISOString() })
+      .eq('id', activeHistory.id)
+      .select()
+      .single();
+    if (updateError) throw updateError;
+    return updatedHistory;
+  },
 };
 
 module.exports = ParkingHistory;

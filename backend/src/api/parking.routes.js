@@ -32,6 +32,69 @@ router.post('/checkout', parkingController.checkOut);
 router.get('/history', parkingController.getMyHistory);
 router.get('/current', parkingController.getCurrentSession);
 
+/**
+ * @swagger
+ * /api/parking/admin/checkin:
+ *   post:
+ *     summary: Admin - Check-in cho user bất kỳ
+ *     tags: [Parking History]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [slot_id, user_id]
+ *             properties:
+ *               slot_id:
+ *                 type: integer
+ *               user_id:
+ *                 type: string
+ *                 format: uuid
+ *           example:
+ *             slot_id: 1
+ *             user_id: "uuid-user"
+ *     responses:
+ *       201:
+ *         description: Check-in thành công
+ *       400:
+ *         description: Lỗi đầu vào hoặc user đã check-in
+ *       403:
+ *         description: Không có quyền
+ *
+ * /api/parking/admin/checkout:
+ *   post:
+ *     summary: Admin - Check-out cho user bất kỳ
+ *     tags: [Parking History]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [user_id]
+ *             properties:
+ *               user_id:
+ *                 type: string
+ *                 format: uuid
+ *           example:
+ *             user_id: "uuid-user"
+ *     responses:
+ *       200:
+ *         description: Check-out thành công
+ *       400:
+ *         description: Không có phiên đỗ xe nào đang hoạt động
+ *       403:
+ *         description: Không có quyền
+ */
+// Admin thao tác check-in/check-out cho user bất kỳ
+router.post('/admin/checkin', authMiddleware.requireAdmin, parkingController.checkInForUser);
+router.post('/admin/checkout', authMiddleware.requireAdmin, parkingController.checkOutForUser);
+
 // Admin history
 router.get('/admin/all', authMiddleware.requireAdmin, parkingController.adminListHistory);
 

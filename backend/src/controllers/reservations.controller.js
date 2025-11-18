@@ -91,6 +91,39 @@ class ReservationsController {
       return responseHandler.error(res, msg || 'Lỗi khi hủy đặt chỗ', 500);
     }
   }
+
+  // Admin tạo reservation cho user bất kỳ
+  async createForUser(req, res) {
+    try {
+      if (req.user.role !== 'ADMIN') return responseHandler.error(res, 'Không có quyền', 403);
+      const { slot_id, user_id, start_time, end_time } = req.body || {};
+      if (!slot_id || !user_id || !start_time || !end_time) {
+        return responseHandler.error(res, 'slot_id, user_id, start_time, end_time là bắt buộc', 400);
+      }
+      const isoRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{3})?)?$/;
+      if (!isoRegex.test(start_time) || !isoRegex.test(end_time)) {
+        return responseHandler.error(res, 'Thời gian phải đúng định dạng ISO local, không có Z', 400);
+      }
+      if (end_time <= start_time) {
+        return responseHandler.error(res, 'Khoảng thời gian không hợp lệ', 400);
+      }
+      // max 3 active per user
+      const count = await Reservations.activeCount(user_id);
+      if (count >= 3) return responseHandler.error(res, 'Người dùng đã đạt tối đa 3 đặt chỗ đang hiệu lực', 400);
+      // overlap check
+      const overlap = await Reservations.hasOverlap(slot_id, start_time, end_time);
+      if (overlap) return responseHandler.error(res, 'Chỗ đỗ đã được đặt trong khoảng thời gian này', 400);
+      // create
+      const created = await Reservations.createForUser({ slot_id, user_id, start_time, end_time });
+      return responseHandler.success(res, created, 'Đặt chỗ thành công', 201);
+    } catch (e) {
+      const msg = e?.message || '';
+      if (msg.includes("Could not find the table 'public.parking_reservations'")) {
+        return responseHandler.error(res, 'Tính năng đặt chỗ chưa bật: cần tạo bảng parking_reservations', 501);
+      }
+      return responseHandler.error(res, msg || 'Lỗi khi đặt chỗ', 500);
+    }
+  }
 }
 
 module.exports = new ReservationsController();
